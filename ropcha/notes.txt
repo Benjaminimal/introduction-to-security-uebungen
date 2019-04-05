@@ -1,0 +1,16 @@
+0x080bd8c6 : pop eax ; ret
+0x080481d1 : pop ebx ; ret
+0x0806f6bb : pop edx ; ret
+0x0806f6e1 : pop edx ; pop ecx ; pop ebx ; ret
+0x080499d3 : int 0x80
+0x08057755 : mov dword ptr [edx], eax ; ret
+
+080f1120 <msg_error>
+080f1160 <msg_banner>
+080f11ec <msg_name>
+080f1200 <msg_numcaptcha>
+080f1218 <msg_question>
+080f1230 <msg_ok>
+080f1240 <msg_nope>
+080f1260 <msg_welldone>
+080f12a0 <msg_fail>
