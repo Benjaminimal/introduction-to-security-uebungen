@@ -14,6 +14,7 @@ Exploitation
 Since the this challenge was about return oriented programming I knew that I had to get some gadgets so I took a look at `file ./ropcha` and found that it was statically linked. Next I got myself a list of all the available gadgets by calling `ROPgadget --binary ./ropcha > gadgets.txt`. After reading the provided documentation about syscalls and the `execve` call I had a general shape in mind of what I had to do to the `getflag`. First I had to fill some registers by putting the needed value on the stack preceded by the address of a gadget that would pop that value into the register. I tried a little and found that doing this was easy but there was still an unanswered question. Where should I put the string with the executables file name and how can I get this locations address which would go into the ebx register. I remembered the tutorial from class and how Marco was able to change the contents of a global variable so I looked at his writeup on github and basically mirrored his approach with the biggest difference being that I had to do so multiple times since the value I wanted to write was larger than four bytes. So I found myself the address of a global char buffer which was large enough to hold my string by calling `objdump -D ./ropcha | grep -E "<msg_ok>"` and greped for some more gadgets. The rest was just concatenating the payload together in a way that would first write the file name to said location, pop the syscall arguments into the right registers and then make the syscall.  
 
 Here is my exploit script:
+
     #!/usr/bin/python2
     import sys
     from pwn import *
@@ -78,4 +79,8 @@ And here are the notes I took while searching for gadgets:
 
 Solution
 --------
-Instead of `scanf` `fgets` should be used to read the user input since the latter only writes as many bytes as it's second argument specifies. Another option would be to not personalise the message so the program doesn't write any user input in a potentially overflowing buffer. In both cases the ability to write arbitrary things onto the stack would be cut out of the program.
+
+    - scanf("%[^\n]s", name);
+    + fgets(name, NAME_LENGTH, stdin);
+
+This approach only reads as many bytes as the second argument specifies minus one. Another option would be to not personalise the message so the program doesn't write any user input in a potentially overflowing buffer. In both cases the ability to write arbitrary things onto the stack would be cut out of the program.
