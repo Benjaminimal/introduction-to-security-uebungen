@@ -13,7 +13,7 @@ Exploitation
 ------------
 To be honest with this one I was stepping in the dark for quiet a while. It didn't take me long to figure out how I can bypass the sanitiser but it took me what felt like ages to figure out what to do with this. My early discoveries where that the closing quote can be realised like that `\'`, white space can be replaced with a comment `/**/` and the replaced words can be protected by placing a word of same language inside it, eg. `UNorION -> UNION`. Then I tried a bunch of random injections to see what I could do but none of them manipulated the mail column in the result. Only after stepping through the code in my mind in reverse starting from the point where the flag gets accessed I realised that with a clever unioned query I can write into the resulting row. The next obstacle was inserting an opening and closing quote in the middle of my payload, the technique from before didn't work because the `\\` in the middle of a query would cause a syntax error. It occurred to me that I might be able to replace the quote character with its ASCII value in hexadecimal but that was not enough so I encoded the whole string in its hex value which got me the flag.  
 
-During the process I set up a local MySql database and modified the source code of the application a little to validate my trial, error and assumptions. Please don't judge me based on this ugly little thing here ...  
+During the process I set up a local MySql database and modified the source code of the application a little to validate my trial, error and assumptions. The values of `$in_mail` within the top lines show a summary of my path to the flag.
 
     <?php
     # seems like ther are 204 users
@@ -25,8 +25,7 @@ During the process I set up a local MySql database and modified the source code 
     $in_mail = "\'/**/UNorION/**/SEorLECT/**/0,0x27204f52206d61696c203d202761646d696e40726f6f74272327,0#";
     # ' OR mail = 'admin@root'#
 
-    $in_password = "foobar";
-    /* $password = "unguessable"; */
+    $in_password = "unguessable";
 
     function graceful_death($message) {
         echo $message."\n";
@@ -66,7 +65,6 @@ During the process I set up a local MySql database and modified the source code 
     echo "\n".$mail."\n\n";
 
     $password = sanitize($in_password);
-    /* $sql = "SELECT * FROM users WHERE mail = '$in_mail'"; */
     $sql = "SELECT * FROM users WHERE mail = '$mail'";
     echo $sql."\n\n";
 
@@ -98,4 +96,17 @@ During the process I set up a local MySql database and modified the source code 
 
 Solution
 --------
-Don't try to sanitize user input which forms part of a SQL query, it's next to impossible to catch all the forms of malicious input. Use prepared statement instead! ... and use them everywhere, not just where you expect user input.
+Don't try to sanitize user input which forms part of a SQL query, it's next to impossible to catch all the forms of malicious input. Use prepared statement instead! ... and use them everywhere, not just where you expect user input.  
+To be specific I would replace the following lines.
+    
+	- $usrs = sql_execute($dbh, "SELECT * FROM users WHERE mail = '$mail'");
+    + $sth = $dbh->prepare("SELECT * FROM users WHERE mail = :mail");
+    + $sth->bindValue(':mail', $mail);
+    + $usrs = $sth->execute();
+    + $usrs = $sth->fetchAll();
+
+
+	- $sql = "SELECT mail FROM users WHERE mail = '" . $usrs[0]['mail'] . "' AND password = :password";
+	+ $sql = "SELECT mail FROM users WHERE mail = :mail AND password = :password";
+
+	+ $sth->bindValue(':mail', $usrs[0]['mail']);
