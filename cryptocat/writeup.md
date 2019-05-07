@@ -65,10 +65,6 @@ Here is my exploit script:
     with open(CMDS['SND']['PATH'], 'rb') as f:
         CMDS['SND']['CIPHER'] = f.read()
 
-    cmd = CMDS['DIR']
-    cipher = cmd['CIPHER']
-    # cipher = cmd['PLAIN']
-
 
     def main():
         print(execute_command(CMDS['DIR']['CIPHER']))
